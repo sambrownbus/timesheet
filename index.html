@@ -53,17 +53,10 @@ button{cursor:pointer}
   flex:1 1 auto;display:flex;flex-direction:column;min-height:0;
   background:var(--plate);border:0;position:relative;box-shadow:none;
 }
-.screwset i{position:absolute;width:11px;height:11px;border-radius:50%;
-  background:radial-gradient(circle at 34% 30%,var(--well),#cdc9c0 65%,#bdb9b0);
-  box-shadow:inset 0 1px 1.5px rgba(0,0,0,.28),0 .5px 0 rgba(255,255,255,.7);z-index:4}
-.screwset i:nth-child(1){top:calc(7px + env(safe-area-inset-top));left:7px}
-.screwset i:nth-child(2){top:calc(7px + env(safe-area-inset-top));right:7px}
-.screwset i:nth-child(3){bottom:calc(7px + env(safe-area-inset-bottom));left:7px}
-.screwset i:nth-child(4){bottom:calc(7px + env(safe-area-inset-bottom));right:7px}
 
 /* ─── top plate ─── */
 /* safe-area padding moved inside, so the plate colour runs under the status bar */
-.top{flex:none;padding:calc(9px + env(safe-area-inset-top)) var(--pad) 0}
+.top{flex:none;padding:calc(13px + env(safe-area-inset-top)) var(--pad) 0}
 .brandrow{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
 .mark{font-size:clamp(19px,5.4vw,24px);letter-spacing:-.035em;font-weight:700;line-height:.9}
 .mark b{color:var(--or);font-weight:700}
@@ -73,7 +66,7 @@ button{cursor:pointer}
   margin-left:calc(var(--pad) * -1);margin-right:calc(var(--pad) * -1)}
 
 /* ─── nav strip ─── */
-.strip{display:flex;align-items:stretch;height:24px;margin-top:7px;user-select:none}
+.strip{display:flex;align-items:stretch;height:24px;margin-top:9px;user-select:none}
 .strip .h{flex:1 1 auto;min-width:6px;background:var(--hatch);opacity:.55}
 .chip{
   font-family:var(--lab);font-size:9.5px;letter-spacing:.13em;padding:0 11px;
@@ -93,7 +86,7 @@ button{cursor:pointer}
 @keyframes sl{from{transform:translate3d(20px,0,0)}to{transform:none}}
 @keyframes sr{from{transform:translate3d(-20px,0,0)}to{transform:none}}
 
-.head{flex:none;padding:9px var(--pad) 7px;display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.head{flex:none;padding:12px var(--pad) 9px;display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
 .head .ttl{font-size:clamp(20px,5.9vw,26px);letter-spacing:-.03em;font-weight:700;line-height:.92}
 .head .fp{font-family:var(--lab);font-size:8.5px;letter-spacing:.11em;color:var(--ink2);margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .back{
@@ -106,7 +99,7 @@ button{cursor:pointer}
 
 /* ─── lists (rows share the available height — never scrolls) ─── */
 .list{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;border-top:1px solid var(--ink)}
-.filler{flex:1 1 0;min-height:0;background:var(--hatch);opacity:.32}
+.filler{flex:1 1 0;min-height:0;background:var(--hatch);opacity:.45}
 
 .row{
   flex:60 1 0;min-height:38px;max-height:58px;
@@ -205,7 +198,7 @@ button{cursor:pointer}
 @keyframes fl{0%{background:rgba(225,81,42,.28)}100%{background:transparent}}
 
 /* ─── readout ─── */
-.readout{flex:none;padding:9px var(--pad) 8px;border-top:1px solid var(--ink);background:var(--card)}
+.readout{flex:none;padding:11px var(--pad) 9px;border-top:1px solid var(--ink);background:var(--card)}
 .rtop{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .tag{font-family:var(--lab);font-size:8px;letter-spacing:.15em;background:var(--ink);color:var(--plate);padding:4px 8px}
 .tag.or{background:var(--or);color:#fff}
@@ -238,7 +231,7 @@ button{cursor:pointer}
 
 /* ─── bottom plate ─── */
 .bot{flex:none;border-top:1px solid var(--ink);background:var(--plate);
-  padding:9px var(--pad) calc(9px + env(safe-area-inset-bottom))}
+  padding:11px var(--pad) calc(10px + env(safe-area-inset-bottom))}
 .ports{display:flex;align-items:stretch;height:24px}
 .ports .h{flex:1 1 auto;background:var(--hatch);opacity:.5;min-width:6px}
 .pbtn{font-family:var(--lab);font-size:9px;letter-spacing:.13em;padding:0 12px;display:flex;align-items:center;
@@ -256,7 +249,7 @@ button{cursor:pointer}
 .botfp b.warn{color:var(--or)}
 .botfp .wide{display:none}
 @media(min-width:430px){.botfp .wide{display:inline}}
-.bcode{display:flex;gap:1px;align-items:flex-end;height:11px;margin-top:6px}
+.bcode{display:flex;gap:1px;align-items:flex-end;height:11px;margin-top:8px}
 .bcode i{background:var(--ink);height:100%}
 
 /* ─── side rail ─── */
@@ -268,6 +261,9 @@ button{cursor:pointer}
 @media(min-height:900px){.wrap{align-items:center}.dev{height:100%;max-height:900px}}
 /* short screens (SE, Safari with both bars): shed decoration so the grid still fits */
 @media(max-height:640px){
+  .top{padding-top:calc(8px + env(safe-area-inset-top))}
+  .strip{margin-top:7px}
+  .readout{padding-top:8px}
   .head{padding-top:7px;padding-bottom:5px}
   .head .fp{margin-top:5px}
   .subline{margin-top:4px}
@@ -288,8 +284,6 @@ button{cursor:pointer}
   </div>
 
   <div class="dev">
-    <div class="screwset"><i></i><i></i><i></i><i></i></div>
-
     <div class="top">
       <div class="brandrow">
         <div>
