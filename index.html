@@ -243,10 +243,13 @@ button{cursor:pointer}
 .pbtn:active{transform:translateY(1px)}
 .pbtn.gh{background:none;color:var(--ink2);border:1px solid var(--grey)}
 .pbtn.gh:hover{background:var(--ink);color:var(--plate);border-color:var(--ink)}
-.botfp{display:flex;justify-content:space-between;gap:10px;font-family:var(--lab);font-size:7.5px;
-  letter-spacing:.09em;color:var(--ink2);line-height:1.5;flex-wrap:wrap;margin-top:7px}
+.botfp{display:flex;justify-content:space-between;gap:8px;font-family:var(--lab);font-size:7.5px;
+  letter-spacing:.06em;color:var(--ink2);line-height:1.5;flex-wrap:wrap;margin-top:7px}
+/* dim label, solid value — only the value ever turns orange */
+.botfp{color:var(--grey)}
 .botfp span{white-space:nowrap}
-.botfp .warn{color:var(--or);font-weight:700}
+.botfp b{font-weight:700;color:var(--ink2)}
+.botfp b.warn{color:var(--or)}
 .botfp .wide{display:none}
 @media(min-width:430px){.botfp .wide{display:inline}}
 .bcode{display:flex;gap:1px;align-items:flex-end;height:11px;margin-top:6px}
@@ -326,9 +329,9 @@ button{cursor:pointer}
         <span class="h"></span>
       </div>
       <div class="botfp">
-        <span id="fpRec">REC 0000</span>
-        <span id="fpBackup">BACKUP —</span>
-        <span id="fpStore">STORAGE …</span>
+        <span>LOG: <b id="fpRec">0000</b></span>
+        <span>JSON EXPORT: <b id="fpBackup">—</b></span>
+        <span>ON DEVICE: <b id="fpStore">—</b></span>
         <span class="wide">×2 TAP DAY = CLEAR</span>
         <span id="fpSave">IDLE</span>
       </div>
@@ -347,7 +350,7 @@ button{cursor:pointer}
    On launch both are merged, so if either is wiped the other refills it. */
 const KEY = "timesheet01.v1";
 const IDB_NAME="timesheet01", IDB_STORE="kv", IDB_REC="state";
-let STORAGE_MODE="…";
+let STORAGE_MODE="—";
 
 function blank(){ return {days:{},ui:null,updated:0,backedUp:0}; }
 function normalise(r){
@@ -411,7 +414,7 @@ function save(){
   clearTimeout(saveT);
   const f=document.getElementById("fpSave");
   if(f){
-    f.textContent="WRITE "+fmtClock(new Date());
+    f.textContent="SAVED "+fmtClock(new Date());
     saveT=setTimeout(()=>{ f.textContent="IDLE"; },2200);
   }
 }
@@ -433,12 +436,12 @@ function hydrate(){
 }
 function requestPersist(){
   if(!navigator.storage || !navigator.storage.persisted){
-    STORAGE_MODE="BEST EFFORT"; renderChrome(); return Promise.resolve();
+    STORAGE_MODE="AT RISK"; renderChrome(); return Promise.resolve();
   }
   return navigator.storage.persisted()
     .then(ok=>ok || (navigator.storage.persist?navigator.storage.persist():false))
-    .then(ok=>{ STORAGE_MODE=ok?"PERSISTENT":"BEST EFFORT"; })
-    .catch(()=>{ STORAGE_MODE="BEST EFFORT"; })
+    .then(ok=>{ STORAGE_MODE=ok?"STABLE":"AT RISK"; })
+    .catch(()=>{ STORAGE_MODE="AT RISK"; })
     .then(()=>renderChrome());
 }
 function backupDays(){
@@ -699,15 +702,15 @@ function renderReadout(){
 }
 function renderChrome(){
   const n=recCount(), yrs=allYears();
-  $("fpRec").textContent="REC "+String(n).padStart(4,"0");
+  $("fpRec").textContent=String(n).padStart(4,"0");
 
   const d=backupDays(), bk=$("fpBackup");
-  bk.textContent = d===null ? "BACKUP NEVER" : d===0 ? "BACKUP TODAY" : "BACKUP "+d+"D AGO";
+  bk.textContent = n===0 ? "—" : d===null ? "NEVER" : d===0 ? "TODAY" : d+"D";
   bk.className = (n>0 && (d===null || d>14)) ? "warn" : "";
 
   const st=$("fpStore");
-  st.textContent="STORAGE "+STORAGE_MODE;
-  st.className = STORAGE_MODE==="BEST EFFORT" ? "warn" : "";
+  st.textContent=STORAGE_MODE;
+  st.className = STORAGE_MODE==="AT RISK" ? "warn" : "";
 
   $("railA").textContent="TIMESHEET ENGINE · "+n+" RECORDS RESIDENT";
   $("railB").textContent="NO ACCOUNT · NO NETWORK · "+(yrs.length>1?yrs[yrs.length-1]+"–"+yrs[0]:yrs[0]);

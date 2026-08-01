@@ -2,7 +2,7 @@
    Cache-first with a background refresh. Once installed the app opens with
    no network at all; a new version is picked up silently on the next launch.
    Bump CACHE when the shell changes. */
-const CACHE = "ts01-v3";
+const CACHE = "ts01-v4";
 const SHELL = [
   "./",
   "./index.html",

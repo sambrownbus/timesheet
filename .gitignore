@@ -1,0 +1,6 @@
+# local-only — not part of the published site
+icon-options/
+serve.command
+publish.command
+timesheet-*.json
+.DS_Store
