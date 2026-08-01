@@ -1,0 +1,903 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="TS—01">
+<meta name="theme-color" content="#EBE8E2">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" href="icon.png">
+<link rel="manifest" href="manifest.json">
+<title>TIMESHEET—01</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-font-smoothing:antialiased}
+:root{
+  --paper:#E7E4DD; --plate:#F2F0EB; --card:#EDEBE5; --well:#E0DCD3;
+  --ink:#21211E; --ink2:#5B5B54; --grey:#B4B0A6; --grey2:#D4D0C6;
+  --or:#E1512A;
+  --lab:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Helvetica Neue","Segoe UI",Arial,sans-serif;
+  --hatch:repeating-linear-gradient(45deg,rgba(33,33,30,.30) 0 1px,transparent 1px 5px);
+  --ease:cubic-bezier(.2,.9,.25,1);
+  --pad:clamp(15px,5vw,30px);
+  --fld:clamp(24px,3.9dvh,32px);
+}
+/* numerals: system sans, tabular, non-slashed zero — consistent on iOS + desktop */
+.num{font-family:var(--sans);font-variant-numeric:tabular-nums;
+     font-feature-settings:"tnum" 1,"zero" 0;letter-spacing:-.015em}
+
+html{height:100%}
+body{
+  height:100vh;height:100dvh;overflow:hidden;display:flex;
+  background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1;
+  padding:8px;
+  padding-top:calc(8px + env(safe-area-inset-top));
+  padding-bottom:calc(8px + env(safe-area-inset-bottom));
+  touch-action:manipulation;
+}
+body::after{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:99;mix-blend-mode:multiply;opacity:.5;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/></filter><rect width='140' height='140' filter='url(%23n)' opacity='0.22'/></svg>");
+}
+button,input{font:inherit;color:inherit;background:none;border:0;outline:0}
+button{cursor:pointer}
+
+/* ─── chassis ─── */
+.wrap{flex:1 1 auto;display:flex;min-height:0;max-width:640px;margin:0 auto;position:relative}
+.dev{
+  flex:1 1 auto;display:flex;flex-direction:column;min-height:0;
+  background:var(--plate);border:1px solid var(--ink);position:relative;
+  box-shadow:0 0 0 1px rgba(255,255,255,.6) inset,0 22px 44px -34px rgba(20,20,16,.75);
+}
+.screwset i{position:absolute;width:11px;height:11px;border-radius:50%;
+  background:radial-gradient(circle at 34% 30%,var(--well),#cdc9c0 65%,#bdb9b0);
+  box-shadow:inset 0 1px 1.5px rgba(0,0,0,.28),0 .5px 0 rgba(255,255,255,.7);z-index:4}
+.screwset i:nth-child(1){top:7px;left:7px}
+.screwset i:nth-child(2){top:7px;right:7px}
+.screwset i:nth-child(3){bottom:7px;left:7px}
+.screwset i:nth-child(4){bottom:7px;right:7px}
+
+/* ─── top plate ─── */
+.top{flex:none;padding:9px var(--pad) 0}
+.brandrow{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.mark{font-size:clamp(19px,5.4vw,24px);letter-spacing:-.035em;font-weight:700;line-height:.9}
+.mark b{color:var(--or);font-weight:700}
+.subline{margin-top:5px;font-family:var(--lab);font-size:8px;letter-spacing:.13em;color:var(--ink2);white-space:nowrap}
+.cap{font-family:var(--lab);font-size:7.5px;letter-spacing:.11em;color:var(--grey);text-align:right;line-height:1.55;padding-top:2px}
+.rule{height:1px;background:var(--ink);margin-top:8px}
+
+/* ─── nav strip ─── */
+.strip{display:flex;align-items:stretch;height:24px;margin-top:7px;user-select:none}
+.strip .h{flex:1 1 auto;min-width:6px;background:var(--hatch);opacity:.55}
+.chip{
+  font-family:var(--lab);font-size:9.5px;letter-spacing:.13em;padding:0 11px;
+  display:flex;align-items:center;white-space:nowrap;flex:none;
+  transition:background .12s var(--ease),color .12s var(--ease),transform .1s var(--ease);
+}
+.chip.done{background:var(--ink);color:var(--plate)}
+.chip.done:active{transform:translateY(1px)}
+.chip.now{background:var(--or);color:#fff;font-weight:700}
+.chip.off{color:var(--grey);border:1px dashed var(--grey);cursor:default}
+
+/* ─── screen ─── */
+.screenwrap{flex:1 1 auto;min-height:0;overflow:hidden}
+.screen{height:100%;display:flex;flex-direction:column}
+.screen.slideL{animation:sl .16s var(--ease)}
+.screen.slideR{animation:sr .16s var(--ease)}
+@keyframes sl{from{transform:translate3d(20px,0,0)}to{transform:none}}
+@keyframes sr{from{transform:translate3d(-20px,0,0)}to{transform:none}}
+
+.head{flex:none;padding:9px var(--pad) 7px;display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.head .ttl{font-size:clamp(20px,5.9vw,26px);letter-spacing:-.03em;font-weight:700;line-height:.92}
+.head .fp{font-family:var(--lab);font-size:8.5px;letter-spacing:.11em;color:var(--ink2);margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.back{
+  font-family:var(--lab);font-size:9.5px;letter-spacing:.12em;border:1px solid var(--ink);
+  padding:6px 9px;display:flex;align-items:center;flex:none;margin-bottom:1px;
+  transition:background .1s var(--ease),color .1s var(--ease);
+}
+.back:hover{background:var(--ink);color:var(--plate)}
+.back:active{transform:translateX(-2px)}
+
+/* ─── lists (rows share the available height — never scrolls) ─── */
+.list{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;border-top:1px solid var(--ink)}
+.filler{flex:1 1 0;min-height:0;background:var(--hatch);opacity:.32}
+
+.row{
+  flex:60 1 0;min-height:38px;max-height:58px;
+  display:grid;grid-template-columns:44px 1fr auto 14px;align-items:center;gap:0 12px;
+  width:100%;text-align:left;padding:0 var(--pad) 0 0;position:relative;
+  border-bottom:1px solid var(--grey2);background:none;transition:background .1s var(--ease);
+}
+.row .idx{height:100%;display:flex;align-items:center;justify-content:center;
+  font-family:var(--lab);font-size:9.5px;color:var(--ink2);border-right:1px solid var(--grey2);position:relative}
+.row.empty .idx{background:var(--hatch);opacity:.85}
+.row .idx::after{content:'';position:absolute;left:0;top:0;bottom:0;width:0;background:var(--or);transition:width .13s var(--ease)}
+.row:hover:not(.empty) .idx::after,.row:active .idx::after{width:3px}
+.row:hover{background:var(--card)}
+.row:active{background:var(--well)}
+.nm{display:flex;flex-direction:column;gap:5px;min-width:0}
+.nm b{font-size:17px;letter-spacing:-.015em;font-weight:700}
+.row.empty .nm b{color:var(--grey);font-weight:500}
+.nm span{font-family:var(--lab);font-size:8px;letter-spacing:.1em;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row.empty .nm span{color:var(--grey)}
+.vals{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.vals em{font-style:normal;font-size:11px;color:var(--ink2);font-weight:500}
+.vals strong{font-size:18px;font-weight:700;color:var(--or)}
+.row.empty .vals em{color:var(--grey)}
+.row.empty .vals strong{color:var(--grey);font-weight:500}
+.arw{font-size:13px;color:var(--grey);transition:transform .13s var(--ease),color .13s var(--ease)}
+.row:hover .arw{transform:translateX(3px);color:var(--ink)}
+
+.dots{display:flex;gap:2.5px;align-items:center}
+.dots i{width:4px;height:4px;border-radius:50%;background:var(--grey2);flex:none}
+.dots i.on{background:var(--ink)}
+.dots i.cur{background:var(--or)}
+
+/* ─── month grid (12 cells, 2 columns — never scrolls) ─── */
+.mgrid{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:1fr 1fr;
+  grid-auto-rows:minmax(34px,1fr);gap:1px;background:var(--grey2);
+  border-top:1px solid var(--ink);border-bottom:1px solid var(--ink)}
+.mc{background:var(--plate);display:flex;flex-direction:column;justify-content:center;gap:6px;
+  padding:0 11px;text-align:left;position:relative;overflow:hidden;transition:background .1s var(--ease)}
+.mc::before{content:'';position:absolute;left:0;top:0;bottom:0;width:0;background:var(--or);transition:width .13s var(--ease)}
+.mc:hover{background:var(--card)}
+.mc:hover:not(.empty)::before,.mc:active::before{width:3px}
+.mc:active{background:var(--well)}
+.mtop{display:flex;align-items:center;gap:7px}
+.mtop i{font-style:normal;font-family:var(--lab);font-size:8.5px;color:var(--ink2)}
+.mtop b{font-size:14px;font-weight:700;letter-spacing:-.01em}
+.mtop .dots{margin-left:auto}
+.mc.empty .mtop b{color:var(--grey);font-weight:500}
+.mbot{display:flex;align-items:flex-end;justify-content:space-between;gap:6px}
+.mbot em{font-style:normal;font-size:10px;color:var(--ink2);font-weight:500}
+.mbot strong{font-size:16px;font-weight:700;color:var(--or);line-height:.9}
+.mc.empty .mbot em{color:var(--grey)}
+.mc.empty .mbot strong{color:var(--grey);font-weight:500}
+
+/* ─── day rows ─── */
+.drow{
+  flex:60 1 0;min-height:32px;max-height:58px;
+  display:grid;grid-template-columns:44px 1fr 18px 1fr 74px;align-items:center;gap:0 7px;
+  border-bottom:1px solid var(--grey2);padding:0 var(--pad) 0 0;position:relative;
+}
+.drow.today{background:linear-gradient(90deg,rgba(225,81,42,.075),rgba(225,81,42,0) 60%)}
+.drow.today::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--or);z-index:2}
+.dlab{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  border-right:1px solid var(--grey2);cursor:pointer;user-select:none}
+.dlab b{font-family:var(--lab);font-size:10.5px;letter-spacing:.04em;font-weight:700}
+.dlab i{font-style:normal;font-size:11px;color:var(--ink2);font-weight:500}
+.drow.wknd .dlab b{color:var(--ink2)}
+.tcell{display:flex;align-items:center;gap:4px;min-width:0}
+.tf{
+  flex:1 1 auto;min-width:0;width:100%;height:var(--fld);padding:0 5px;
+  font-size:16px;text-align:center;color:var(--ink2);font-weight:500;
+  background:var(--well);border:1px solid transparent;border-bottom:1px solid var(--grey);
+  transition:background .1s var(--ease),border-color .1s var(--ease),color .1s var(--ease);
+  border-radius:0;-webkit-appearance:none;
+}
+.tf::placeholder{color:var(--grey);font-size:14px;letter-spacing:.06em}
+.tf.on{background:transparent;border-color:transparent;color:var(--ink);font-weight:700}
+.tf:focus{background:#fff;border:1px solid var(--or);color:var(--ink);box-shadow:0 0 0 2px rgba(225,81,42,.14)}
+.mer{
+  flex:none;width:23px;height:var(--fld);font-family:var(--lab);font-size:11px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+  border:1px solid var(--grey2);color:var(--grey);background:transparent;
+  transition:background .1s var(--ease),color .1s var(--ease),border-color .1s var(--ease);
+}
+.mer.am{border-color:var(--ink);color:var(--ink);background:transparent}
+.mer.pm{border-color:var(--ink);color:var(--plate);background:var(--ink)}
+.mer:active{transform:translateY(1px)}
+.lnk{position:relative;height:100%}
+.lnk::before{content:'';position:absolute;left:-2px;right:-2px;top:50%;margin-top:-1.5px;height:3px;background:var(--grey2)}
+.drow.has .lnk::before{background:var(--or)}
+.dtot{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.dtot em{font-style:normal;font-size:11px;color:var(--ink2);font-weight:500}
+.dtot strong{font-size:18px;font-weight:700;color:var(--or);padding:1px 2px;margin:-1px -2px}
+.dtot.zero em{color:var(--grey)}
+.dtot.zero strong{color:var(--grey2);font-weight:500}
+.flash{animation:fl .26s var(--ease)}
+@keyframes fl{0%{background:rgba(225,81,42,.28)}100%{background:transparent}}
+
+/* ─── readout ─── */
+.readout{flex:none;padding:9px var(--pad) 8px;border-top:1px solid var(--ink);background:var(--card)}
+.rtop{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.tag{font-family:var(--lab);font-size:8px;letter-spacing:.15em;background:var(--ink);color:var(--plate);padding:4px 8px}
+.tag.or{background:var(--or);color:#fff}
+.rmain{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-top:7px}
+.rleft{display:flex;flex-direction:column;gap:5px}
+.rleft .hm{font-size:clamp(18px,5vw,22px);font-weight:700;line-height:1}
+.rleft .fp{font-family:var(--lab);font-size:7.5px;letter-spacing:.13em;color:var(--ink2);line-height:1}
+/* outlined numeral drawn as SVG: round joins (no miter spikes) and an exact
+   bounding box, so the glyphs can never bleed into the plot below */
+.big{flex:1 1 auto;min-width:0;height:clamp(27px,7.8vw,37px);display:block;overflow:visible}
+.big text{
+  font-family:var(--sans);font-weight:700;font-size:60px;letter-spacing:-3px;
+  font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1,"zero" 0;
+  fill:none;stroke:var(--ink);stroke-width:2.1;stroke-linejoin:round;stroke-linecap:round;
+  paint-order:stroke;
+}
+.big .f{stroke:var(--or)}
+
+.plot{margin-top:8px;padding-top:6px;border-top:1px solid var(--grey2)}
+.prof{display:flex;align-items:flex-end;gap:2px;height:18px;border-bottom:1px solid var(--ink)}
+.prof i{flex:1 1 0;min-width:2px;background:var(--ink);height:2px;transition:height .18s var(--ease)}
+.prof i.z{background:var(--grey2)}
+.prof i.cur{background:var(--or)}
+.axis{display:flex;gap:2px;margin-top:3px}
+.axis span{flex:1 1 0;min-width:0;text-align:center;font-family:var(--lab);font-size:7.5px;
+  letter-spacing:.02em;color:var(--ink2);white-space:nowrap;overflow:hidden}
+.axis span.cur{color:var(--or);font-weight:700}
+.axis span.z{color:var(--grey)}
+.proflab{display:flex;justify-content:space-between;font-family:var(--lab);font-size:7.5px;letter-spacing:.12em;color:var(--ink2);padding-top:4px}
+
+/* ─── bottom plate ─── */
+.bot{flex:none;border-top:1px solid var(--ink);padding:9px var(--pad);background:var(--plate)}
+.ports{display:flex;align-items:stretch;height:24px}
+.ports .h{flex:1 1 auto;background:var(--hatch);opacity:.5;min-width:6px}
+.pbtn{font-family:var(--lab);font-size:9px;letter-spacing:.13em;padding:0 12px;display:flex;align-items:center;
+  background:var(--ink);color:var(--plate);flex:none;transition:background .1s var(--ease)}
+.pbtn:hover{background:var(--or)}
+.pbtn:active{transform:translateY(1px)}
+.pbtn.gh{background:none;color:var(--ink2);border:1px solid var(--grey)}
+.pbtn.gh:hover{background:var(--ink);color:var(--plate);border-color:var(--ink)}
+.botfp{display:flex;justify-content:space-between;gap:10px;font-family:var(--lab);font-size:7.5px;
+  letter-spacing:.09em;color:var(--ink2);line-height:1.5;flex-wrap:wrap;margin-top:7px}
+.botfp span{white-space:nowrap}
+.botfp .warn{color:var(--or);font-weight:700}
+.botfp .wide{display:none}
+@media(min-width:430px){.botfp .wide{display:inline}}
+.bcode{display:flex;gap:1px;align-items:flex-end;height:11px;margin-top:6px}
+.bcode i{background:var(--ink);height:100%}
+
+/* ─── side rail ─── */
+.rail{position:absolute;top:0;bottom:0;right:-25px;width:18px;display:none;
+  writing-mode:vertical-rl;text-orientation:mixed;font-family:var(--lab);font-size:7.5px;
+  letter-spacing:.18em;color:var(--ink2);padding:22px 0;gap:18px}
+.rail div{white-space:nowrap}
+@media(min-width:800px){.rail{display:flex}}
+@media(min-height:900px){.wrap{align-items:center}.dev{height:100%;max-height:900px}}
+/* short screens (SE, Safari with both bars): shed decoration so the grid still fits */
+@media(max-height:640px){
+  .head{padding-top:7px;padding-bottom:5px}
+  .head .fp{margin-top:5px}
+  .subline{margin-top:4px}
+  .plot{margin-top:6px;padding-top:5px}
+  .prof{height:14px}
+  .proflab{display:none}
+  .botfp{margin-top:6px}
+  .bcode{display:none}
+}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="rail">
+    <div id="railA">TIMESHEET ENGINE · LOCAL STORAGE</div>
+    <div id="railB">NO ACCOUNT · NO NETWORK · NO SYNC</div>
+  </div>
+
+  <div class="dev">
+    <div class="screwset"><i></i><i></i><i></i><i></i></div>
+
+    <div class="top">
+      <div class="brandrow">
+        <div>
+          <div class="mark">TIMESHEET<b>—01</b></div>
+          <div class="subline">WEEK LOG · H:M + DECIMAL</div>
+        </div>
+        <div class="cap">RESIDENT<br>LOCAL 1.3</div>
+      </div>
+      <div class="rule"></div>
+      <div class="strip" id="strip"></div>
+    </div>
+
+    <div class="screenwrap"><div class="screen" id="screen"></div></div>
+
+    <div class="readout">
+      <div class="rtop">
+        <span class="tag" id="rtag">TOTAL</span>
+        <span class="tag or" id="rscope">—</span>
+      </div>
+      <div class="rmain">
+        <div class="rleft">
+          <div class="hm num" id="rhm">0h 00m</div>
+          <div class="fp">HOURS · MINUTES</div>
+        </div>
+        <svg class="big" id="rbig" viewBox="0 0 100 40" preserveAspectRatio="xMaxYMid meet"></svg>
+      </div>
+      <div class="plot">
+        <div class="prof" id="prof"></div>
+        <div class="axis" id="axis"></div>
+      </div>
+      <div class="proflab"><span id="proflabA">PROFILE</span><span id="proflabB">MAX —</span></div>
+    </div>
+
+    <div class="bot">
+      <div class="ports">
+        <span class="h"></span>
+        <button class="pbtn" id="btnToday">TODAY</button>
+        <span class="h"></span>
+        <button class="pbtn gh" id="btnExport">EXPORT</button>
+        <button class="pbtn gh" id="btnImport">IMPORT</button>
+        <span class="h"></span>
+      </div>
+      <div class="botfp">
+        <span id="fpRec">REC 0000</span>
+        <span id="fpBackup">BACKUP —</span>
+        <span id="fpStore">STORAGE …</span>
+        <span class="wide">×2 TAP DAY = CLEAR</span>
+        <span id="fpSave">IDLE</span>
+      </div>
+      <div class="bcode" id="bcode"></div>
+    </div>
+  </div>
+</div>
+<input type="file" id="fileIn" accept="application/json" class="hidden">
+
+<script>
+"use strict";
+/* ══ storage ══════════════════════════════════════════════════
+   Two independent stores hold the same record. IndexedDB is primary
+   (larger quota, survives more); localStorage is a redundant mirror and
+   gives a synchronous read at boot so the first paint needs no await.
+   On launch both are merged, so if either is wiped the other refills it. */
+const KEY = "timesheet01.v1";
+const IDB_NAME="timesheet01", IDB_STORE="kv", IDB_REC="state";
+let STORAGE_MODE="…";
+
+function blank(){ return {days:{},ui:null,updated:0,backedUp:0}; }
+function normalise(r){
+  if(!r || typeof r!=="object") return blank();
+  return { days:(r.days&&typeof r.days==="object")?r.days:{},
+           ui:r.ui||null, updated:+r.updated||0, backedUp:+r.backedUp||0 };
+}
+function loadLocal(){
+  try{ return normalise(JSON.parse(localStorage.getItem(KEY)||"{}")); }
+  catch(e){ return blank(); }
+}
+/* union of both day maps; on a genuine conflict the newer store wins */
+function mergeState(a,b){
+  const out=normalise(a), other=normalise(b);
+  const bNewer = other.updated > out.updated;
+  for(const k in other.days){
+    if(!(k in out.days) || bNewer) out.days[k]=other.days[k];
+  }
+  out.updated=Math.max(out.updated,other.updated);
+  out.backedUp=Math.max(out.backedUp,other.backedUp);
+  if(bNewer && other.ui) out.ui=other.ui;
+  return out;
+}
+
+let _idb=null;
+function idbOpen(){
+  if(_idb) return _idb;
+  _idb=new Promise((res,rej)=>{
+    let rq;
+    try{ rq=indexedDB.open(IDB_NAME,1); }catch(e){ return rej(e); }
+    rq.onupgradeneeded=()=>{ try{ rq.result.createObjectStore(IDB_STORE); }catch(e){} };
+    rq.onsuccess=()=>res(rq.result);
+    rq.onerror=()=>rej(rq.error);
+    rq.onblocked=()=>rej(new Error("blocked"));
+  });
+  return _idb;
+}
+function idbGet(){
+  return idbOpen().then(db=>new Promise((res,rej)=>{
+    const q=db.transaction(IDB_STORE,"readonly").objectStore(IDB_STORE).get(IDB_REC);
+    q.onsuccess=()=>res(q.result||null); q.onerror=()=>rej(q.error);
+  }));
+}
+function idbPut(v){
+  return idbOpen().then(db=>new Promise((res,rej)=>{
+    const tx=db.transaction(IDB_STORE,"readwrite");
+    tx.objectStore(IDB_STORE).put(JSON.parse(JSON.stringify(v)),IDB_REC);
+    tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); tx.onabort=()=>rej(tx.error);
+  }));
+}
+
+const DB = loadLocal();
+
+let saveT=null;
+function save(){
+  DB.ui={level:S.level,y:S.y,m:S.m,wk:S.wk};
+  DB.updated=Date.now();
+  const blob=JSON.stringify(DB);
+  try{ localStorage.setItem(KEY,blob); }catch(e){}
+  idbPut(DB).catch(()=>{});
+  clearTimeout(saveT);
+  const f=document.getElementById("fpSave");
+  if(f){
+    f.textContent="WRITE "+fmtClock(new Date());
+    saveT=setTimeout(()=>{ f.textContent="IDLE"; },2200);
+  }
+}
+
+/* pull IndexedDB in after first paint, heal any divergence, then ask the
+   browser to exempt this origin from eviction */
+function hydrate(){
+  return idbGet().then(rec=>{
+    if(!rec) return;
+    const before=JSON.stringify(DB.days);
+    const merged=mergeState(DB,rec);
+    DB.days=merged.days; DB.updated=merged.updated; DB.backedUp=merged.backedUp;
+    if(JSON.stringify(DB.days)!==before &&
+       !(document.activeElement && document.activeElement.classList.contains("tf"))) render(0);
+  }).catch(()=>{}).then(()=>{
+    save();            // writes both stores — refills whichever was behind
+    return requestPersist();
+  });
+}
+function requestPersist(){
+  if(!navigator.storage || !navigator.storage.persisted){
+    STORAGE_MODE="BEST EFFORT"; renderChrome(); return Promise.resolve();
+  }
+  return navigator.storage.persisted()
+    .then(ok=>ok || (navigator.storage.persist?navigator.storage.persist():false))
+    .then(ok=>{ STORAGE_MODE=ok?"PERSISTENT":"BEST EFFORT"; })
+    .catch(()=>{ STORAGE_MODE="BEST EFFORT"; })
+    .then(()=>renderChrome());
+}
+function backupDays(){
+  if(!DB.backedUp) return null;
+  return Math.floor((Date.now()-DB.backedUp)/864e5);
+}
+
+/* ══ time helpers ═════════════════════════════════════════════ */
+const MON=["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+const MONL=["JANUARY","FEBRUARY","MARCH","APRIL","MAY","JUNE","JULY","AUGUST","SEPTEMBER","OCTOBER","NOVEMBER","DECEMBER"];
+const DAY=["SUN","MON","TUE","WED","THU","FRI","SAT"];
+
+function pad(n){ return String(n).padStart(2,"0"); }
+function key(d){ return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
+function fromKey(k){ const p=k.split("-"); return new Date(+p[0],+p[1]-1,+p[2]); }
+/* weeks run SUN → SAT and are anchored to their sunday */
+function weekStart(d){ const t=new Date(d.getFullYear(),d.getMonth(),d.getDate()); t.setDate(t.getDate()-t.getDay()); return t; }
+function addDays(d,n){ const t=new Date(d.getFullYear(),d.getMonth(),d.getDate()); t.setDate(t.getDate()+n); return t; }
+/* week-of-year, sunday-anchored: week 1 is the week containing jan 1.
+   UTC arithmetic so DST transitions can't shift the division. */
+function weekNo(d){
+  const t=Date.UTC(d.getFullYear(),d.getMonth(),d.getDate());
+  const j=new Date(d.getFullYear(),0,1);
+  const s=Date.UTC(j.getFullYear(),0,1-j.getDay());
+  return Math.floor((t-s)/6048e5)+1;
+}
+function weekStartsOfMonth(y,m){
+  let d=weekStart(new Date(y,m,1));
+  if(d.getMonth()!==m||d.getFullYear()!==y) d=addDays(d,7);
+  const out=[];
+  while(d.getFullYear()===y && d.getMonth()===m){ out.push(key(d)); d=addDays(d,7); }
+  return out;
+}
+function fmtClock(d){ return pad(d.getHours())+":"+pad(d.getMinutes()); }
+function h12(v){ const h=Math.floor(v/60)%24, m=v%60; return ((h%12)||12)+":"+pad(m); }
+function isPM(v){ return (Math.floor(v/60)%24)>=12; }
+function hm(mins){ return Math.floor(mins/60)+"h "+pad(mins%60)+"m"; }
+function dec(mins){ return (mins/60).toFixed(2); }
+
+/* ══ aggregation ══════════════════════════════════════════════ */
+function dayMin(k){
+  const r=DB.days[k];
+  if(!r || r.in==null || r.out==null) return 0;
+  let d=r.out-r.in; if(d<=0) d+=1440;
+  return d;
+}
+function hasEntry(k){ const r=DB.days[k]; return !!(r && (r.in!=null||r.out!=null)); }
+function weekMin(wk){ const d=fromKey(wk); let s=0; for(let i=0;i<7;i++) s+=dayMin(key(addDays(d,i))); return s; }
+function monthMin(y,m){ return weekStartsOfMonth(y,m).reduce((s,w)=>s+weekMin(w),0); }
+function yearMin(y){ let s=0; for(let m=0;m<12;m++) s+=monthMin(y,m); return s; }
+function allYears(){
+  const set=new Set([new Date().getFullYear()]);
+  for(const k in DB.days){ if(hasEntry(k)) set.add(weekStart(fromKey(k)).getFullYear()); }
+  return [...set].sort((a,b)=>b-a);
+}
+function recCount(){ let n=0; for(const k in DB.days) if(hasEntry(k)) n++; return n; }
+
+/* ══ parsing ══════════════════════════════════════════════════ */
+function parseTime(raw, mer, kind, ref){
+  if(raw==null) return null;
+  let s=String(raw).toLowerCase().replace(/[^0-9apm:.]/g,"");
+  if(!s) return null;
+  let ex=null;
+  if(/(a|am)$/.test(s)){ ex="A"; s=s.replace(/(am|a)$/,""); }
+  else if(/(p|pm)$/.test(s)){ ex="P"; s=s.replace(/(pm|p)$/,""); }
+  s=s.replace(/[.]/g,":").replace(/m/g,"");
+  if(!s) return null;
+  let h,m;
+  if(s.indexOf(":")>-1){ const p=s.split(":"); h=parseInt(p[0],10); m=parseInt(p[1]||"0",10); }
+  else if(s.length<=2){ h=parseInt(s,10); m=0; }
+  else { const t=s.padStart(4,"0"); h=parseInt(t.slice(0,-2),10); m=parseInt(t.slice(-2),10); }
+  if(isNaN(h)||isNaN(m)||m>59||h>23||h<0) return null;
+
+  const use = ex || mer;
+  if(h>12) return h*60+m;
+  if(h===0) return m;
+  if(use==="A") return (h===12?0:h)*60+m;
+  if(use==="P") return (h===12?12:h+12)*60+m;
+
+  if(kind==="in"){
+    if(h===12) return 720+m;
+    if(h>=6&&h<=11) return h*60+m;
+    return (h+12)*60+m;
+  }
+  const a=h*60+m, b=((h===12)?12:h+12)*60+m;
+  if(ref!=null){
+    if(a>ref && a-ref<=16*60) return a;
+    return b;
+  }
+  return b;
+}
+
+/* ══ state ════════════════════════════════════════════════════ */
+const NOW=new Date();
+const TODAY=key(NOW);
+const S = DB.ui && DB.ui.level ? {level:DB.ui.level,y:DB.ui.y,m:DB.ui.m,wk:DB.ui.wk}
+        : {level:"days", y:NOW.getFullYear(), m:NOW.getMonth(), wk:key(weekStart(NOW))};
+if(S.y==null) S.y=NOW.getFullYear();
+if(S.m==null) S.m=NOW.getMonth();
+if(!S.wk) S.wk=key(weekStart(NOW));
+S.wk=key(weekStart(fromKey(S.wk)));   // re-anchor legacy monday-based state
+
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+
+/* ══ nav strip ════════════════════════════════════════════════ */
+function renderStrip(){
+  const lv=["years","months","weeks","days"];
+  const cur=lv.indexOf(S.level);
+  const label=["ARCHIVE",String(S.y),MON[S.m],"W"+weekNo(fromKey(S.wk))];
+  const ghost=["ARCHIVE","YEAR","MONTH","WEEK"];
+  let h='<span class="h"></span>';
+  for(let i=0;i<4;i++){
+    const cls = i<cur ? "done" : i===cur ? "now" : "off";
+    h += '<button class="chip '+cls+'" data-lv="'+lv[i]+'"'+(i>cur?" disabled":"")+'>'+(i<=cur?label[i]:ghost[i])+'</button>';
+    if(i===0||i===2) h+='<span class="h"></span>';
+  }
+  h+='<span class="h"></span>';
+  $("strip").innerHTML=h;
+}
+
+/* ══ views ════════════════════════════════════════════════════ */
+function dotsHTML(arr,curIdx){
+  return '<div class="dots">'+arr.map((v,i)=>'<i class="'+(i===curIdx?"cur":v?"on":"")+'"></i>').join("")+'</div>';
+}
+function valsHTML(mins){
+  return '<div class="vals num"><em>'+hm(mins)+'</em><strong>'+dec(mins)+'</strong></div>';
+}
+function headHTML(title,fine,back){
+  return '<div class="head"><div style="min-width:0"><div class="ttl">'+esc(title)+'</div><div class="fp">'+esc(fine)+'</div></div>'+
+    (back?'<button class="back" data-back="1">←&nbsp;BACK</button>':'')+'</div>';
+}
+
+function viewYears(){
+  let rows="";
+  allYears().forEach((y,i)=>{
+    const t=yearMin(y);
+    const months=[]; for(let m=0;m<12;m++) months.push(monthMin(y,m)>0);
+    rows += '<button class="row'+(t?"":" empty")+'" data-go="months" data-y="'+y+'">'+
+      '<span class="idx">'+pad(i+1)+'</span>'+
+      '<span class="nm"><b class="num">'+y+'</b><span>'+months.filter(Boolean).length+'/12 MONTHS ACTIVE</span>'+
+      dotsHTML(months, y===NOW.getFullYear()?NOW.getMonth():-1)+'</span>'+
+      valsHTML(t)+'<span class="arw">›</span></button>';
+  });
+  return headHTML("ARCHIVE","ALL RECORDS · "+recCount()+" DAYS LOGGED",false)+'<div class="list">'+rows+'<div class="filler"></div></div>';
+}
+
+function viewMonths(){
+  let cells="";
+  for(let m=0;m<12;m++){
+    const t=monthMin(S.y,m);
+    const wks=weekStartsOfMonth(S.y,m).map(w=>weekMin(w)>0);
+    cells += '<button class="mc'+(t?"":" empty")+'" data-go="weeks" data-m="'+m+'">'+
+      '<span class="mtop"><i>'+pad(m+1)+'</i><b>'+MON[m]+'</b>'+dotsHTML(wks,-1)+'</span>'+
+      '<span class="mbot num"><em>'+hm(t)+'</em><strong>'+dec(t)+'</strong></span>'+
+    '</button>';
+  }
+  return headHTML(String(S.y),"12 MONTHS · "+dec(yearMin(S.y))+" DECIMAL HOURS",true)+'<div class="mgrid">'+cells+'</div>';
+}
+
+function viewWeeks(){
+  const wks=weekStartsOfMonth(S.y,S.m);
+  const curWk=key(weekStart(NOW));
+  let rows="";
+  wks.forEach(w=>{
+    const d=fromKey(w), e=addDays(d,6), t=weekMin(w);
+    const ds=[]; for(let i=0;i<7;i++) ds.push(dayMin(key(addDays(d,i)))>0);
+    const span=MON[d.getMonth()]+" "+pad(d.getDate())+" — "+MON[e.getMonth()]+" "+pad(e.getDate());
+    rows += '<button class="row'+(t?"":" empty")+'" data-go="days" data-wk="'+w+'">'+
+      '<span class="idx">W'+weekNo(d)+'</span>'+
+      '<span class="nm"><b>'+span+'</b><span>'+ds.filter(Boolean).length+' OF 7 DAYS'+(w===curWk?" · CURRENT":"")+'</span>'+
+      dotsHTML(ds, w===curWk?NOW.getDay():-1)+'</span>'+
+      valsHTML(t)+'<span class="arw">›</span></button>';
+  });
+  return headHTML(MONL[S.m]+" "+S.y, wks.length+" WEEKS · ANCHORED TO SUNDAY", true)+'<div class="list">'+rows+'<div class="filler"></div></div>';
+}
+
+function merCls(v){ return v==null?"":(isPM(v)?" pm":" am"); }
+function merTxt(v){ return v==null?"–":(isPM(v)?"P":"A"); }
+
+function viewDays(){
+  const d0=fromKey(S.wk);
+  let rows="";
+  for(let i=0;i<7;i++){
+    const d=addDays(d0,i), k=key(d), r=DB.days[k]||{}, t=dayMin(k);
+    const iv=r.in!=null, ov=r.out!=null;
+    rows += '<div class="drow'+(k===TODAY?" today":"")+((i===0||i===6)?" wknd":"")+(t?" has":"")+'" data-k="'+k+'">'+
+      '<div class="dlab" data-clear="1"><b>'+DAY[i]+'</b><i class="num">'+pad(d.getDate())+'</i></div>'+
+      '<div class="tcell">'+
+        '<input class="tf num'+(iv?" on":"")+'" inputmode="numeric" autocomplete="off" spellcheck="false" data-f="in" placeholder="––:––" value="'+(iv?h12(r.in):"")+'">'+
+        '<button class="mer'+merCls(r.in)+'" data-m="in">'+merTxt(iv?r.in:null)+'</button>'+
+      '</div>'+
+      '<div class="lnk"></div>'+
+      '<div class="tcell">'+
+        '<input class="tf num'+(ov?" on":"")+'" inputmode="numeric" autocomplete="off" spellcheck="false" data-f="out" placeholder="––:––" value="'+(ov?h12(r.out):"")+'">'+
+        '<button class="mer'+merCls(r.out)+'" data-m="out">'+merTxt(ov?r.out:null)+'</button>'+
+      '</div>'+
+      '<div class="dtot num'+(t?"":" zero")+'"><em>'+hm(t)+'</em><strong>'+dec(t)+'</strong></div>'+
+    '</div>';
+  }
+  const e=addDays(d0,6);
+  const fine=MON[d0.getMonth()]+" "+pad(d0.getDate())+" — "+MON[e.getMonth()]+" "+pad(e.getDate())+" · "+d0.getFullYear();
+  return headHTML("WEEK "+weekNo(d0),fine,true)+'<div class="list">'+rows+'</div>';
+}
+
+/* ══ readout ══════════════════════════════════════════════════ */
+function readoutData(){
+  if(S.level==="years"){
+    const ys=allYears().slice().reverse();
+    return { tag:"ARCHIVE TOTAL", scope:"ALL", total:ys.reduce((s,y)=>s+yearMin(y),0),
+             bars:ys.map(y=>yearMin(y)), axis:ys.map(y=>"'"+String(y).slice(2)), cur:-1, unit:"YEARS" };
+  }
+  if(S.level==="months"){
+    const b=[]; for(let m=0;m<12;m++) b.push(monthMin(S.y,m));
+    return { tag:"YEAR TOTAL", scope:String(S.y), total:yearMin(S.y), bars:b,
+             axis:MON.map(m=>m[0]), cur:(S.y===NOW.getFullYear()?NOW.getMonth():-1), unit:"MONTHS" };
+  }
+  if(S.level==="weeks"){
+    const wks=weekStartsOfMonth(S.y,S.m), curWk=key(weekStart(NOW));
+    return { tag:"MONTH TOTAL", scope:MON[S.m]+" "+S.y, total:monthMin(S.y,S.m),
+             bars:wks.map(w=>weekMin(w)), axis:wks.map(w=>"W"+weekNo(fromKey(w))),
+             cur:wks.indexOf(curWk), unit:"WEEKS" };
+  }
+  const d0=fromKey(S.wk), b=[];
+  for(let i=0;i<7;i++) b.push(dayMin(key(addDays(d0,i))));
+  return { tag:"WEEK TOTAL", scope:"W"+weekNo(d0), total:weekMin(S.wk), bars:b,
+           axis:DAY.map(d=>d[0]), cur:(S.wk===key(weekStart(NOW))?NOW.getDay():-1), unit:"DAYS" };
+}
+/* SVG numeral: measure the glyphs, then fit the viewBox to them exactly.
+   Guarantees the outline occupies only its own box — nothing can collide. */
+function paintBig(total){
+  const sp=dec(total).split("."), svg=$("rbig");
+  svg.innerHTML='<text x="0" y="0">'+esc(sp[0])+'<tspan class="f">.'+esc(sp[1])+'</tspan></text>';
+  const t=svg.firstChild;
+  let bb=null;
+  try{ bb=t.getBBox(); }catch(e){}
+  if(bb && bb.width>0){
+    const q=1.3;   // half the stroke, so round joins aren't clipped
+    svg.setAttribute("viewBox",(bb.x-q)+" "+(bb.y-q)+" "+(bb.width+q*2)+" "+(bb.height+q*2));
+  }
+}
+function renderReadout(){
+  const r=readoutData();
+  $("rtag").textContent=r.tag;
+  $("rscope").textContent=r.scope;
+  paintBig(r.total);
+  $("rhm").textContent=hm(r.total);
+  const peak=Math.max.apply(null,r.bars.concat([0]));
+  const mx=Math.max(peak,1);
+  $("prof").innerHTML=r.bars.map((v,i)=>{
+    const h=v?Math.max(3,Math.round(v/mx*18)):2;
+    return '<i class="'+(v?(i===r.cur?"cur":""):"z")+'" style="height:'+h+'px"></i>';
+  }).join("");
+  $("axis").innerHTML=r.axis.map((s,i)=>
+    '<span class="'+(i===r.cur?"cur":(r.bars[i]?"":"z"))+'">'+esc(s)+'</span>').join("");
+  $("proflabA").textContent=r.bars.filter(v=>v>0).length+" OF "+r.bars.length+" "+r.unit;
+  $("proflabB").textContent="PEAK "+dec(peak);
+}
+function renderChrome(){
+  const n=recCount(), yrs=allYears();
+  $("fpRec").textContent="REC "+String(n).padStart(4,"0");
+
+  const d=backupDays(), bk=$("fpBackup");
+  bk.textContent = d===null ? "BACKUP NEVER" : d===0 ? "BACKUP TODAY" : "BACKUP "+d+"D AGO";
+  bk.className = (n>0 && (d===null || d>14)) ? "warn" : "";
+
+  const st=$("fpStore");
+  st.textContent="STORAGE "+STORAGE_MODE;
+  st.className = STORAGE_MODE==="BEST EFFORT" ? "warn" : "";
+
+  $("railA").textContent="TIMESHEET ENGINE · "+n+" RECORDS RESIDENT";
+  $("railB").textContent="NO ACCOUNT · NO NETWORK · "+(yrs.length>1?yrs[yrs.length-1]+"–"+yrs[0]:yrs[0]);
+  let seed=n*7919+(S.y*13)+Math.round(yearMin(S.y)), bc="";
+  for(let i=0;i<64;i++){
+    seed=(seed*1103515245+12345)&0x7fffffff;
+    bc+='<i style="width:'+(1+(seed>>7)%3)+'px;opacity:'+(((seed>>3)%5)?1:.15)+'"></i>';
+  }
+  $("bcode").innerHTML=bc;
+}
+
+/* ══ navigation ═══════════════════════════════════════════════ */
+function render(dir){
+  const sc=$("screen");
+  sc.classList.remove("slideL","slideR");
+  sc.innerHTML = S.level==="years"?viewYears() : S.level==="months"?viewMonths()
+               : S.level==="weeks"?viewWeeks() : viewDays();
+  void sc.offsetWidth;
+  if(dir===1) sc.classList.add("slideL");
+  else if(dir===-1) sc.classList.add("slideR");
+  renderStrip(); renderReadout(); renderChrome();
+}
+function go(level,dir,opts){
+  if(opts){ if(opts.y!=null)S.y=opts.y; if(opts.m!=null)S.m=opts.m; if(opts.wk)S.wk=opts.wk; }
+  S.level=level; render(dir); save();
+  if(navigator.vibrate) navigator.vibrate(6);
+}
+function back(){
+  if(S.level==="days") go("weeks",-1);
+  else if(S.level==="weeks") go("months",-1);
+  else if(S.level==="months") go("years",-1);
+}
+
+/* ══ day editing ══════════════════════════════════════════════ */
+function repaintDays(changedRow){
+  document.querySelectorAll(".drow").forEach(row=>{
+    const t=dayMin(row.dataset.k), tot=row.querySelector(".dtot");
+    tot.classList.toggle("zero",!t);
+    tot.querySelector("em").textContent=hm(t);
+    const st=tot.querySelector("strong");
+    if(st.textContent!==dec(t)){
+      st.textContent=dec(t);
+      if(row===changedRow){ st.classList.remove("flash"); void st.offsetWidth; st.classList.add("flash"); }
+    }
+    row.classList.toggle("has",!!t);
+  });
+  renderReadout(); renderChrome();
+}
+function setField(row,f,val){
+  const k=row.dataset.k;
+  const rec=DB.days[k]||(DB.days[k]={});
+  if(val==null) delete rec[f]; else rec[f]=val;
+  if(rec.in==null && rec.out==null) delete DB.days[k];
+  const inp=row.querySelector('.tf[data-f="'+f+'"]');
+  const mb=row.querySelector('.mer[data-m="'+f+'"]');
+  inp.value = val==null?"":h12(val);
+  inp.classList.toggle("on", val!=null);
+  mb.textContent = merTxt(val);
+  mb.className = "mer"+merCls(val);
+  repaintDays(row);
+  save();
+}
+function commit(inp){
+  const row=inp.closest(".drow"), f=inp.dataset.f, k=row.dataset.k;
+  const rec=DB.days[k]||{};
+  const raw=inp.value.trim();
+  if(!raw){ setField(row,f,null); return; }
+  const mb=row.querySelector('.mer[data-m="'+f+'"]');
+  const mer = mb.classList.contains("pm") ? "P" : mb.classList.contains("am") ? "A" : null;
+  const v=parseTime(raw, mer, f, f==="out"?rec.in:null);
+  setField(row,f, v==null ? (rec[f]!=null?rec[f]:null) : v);
+}
+
+/* ══ events ═══════════════════════════════════════════════════ */
+$("screen").addEventListener("click",e=>{
+  if(e.target.closest("[data-back]")){ back(); return; }
+  const r=e.target.closest("[data-go]");
+  if(r){
+    const g=r.dataset.go;
+    if(g==="months") go("months",1,{y:+r.dataset.y});
+    else if(g==="weeks") go("weeks",1,{m:+r.dataset.m});
+    else if(g==="days") go("days",1,{wk:r.dataset.wk});
+    return;
+  }
+  const mb=e.target.closest(".mer");
+  if(mb){
+    const row=mb.closest(".drow"), f=mb.dataset.m, rec=DB.days[row.dataset.k];
+    if(rec && rec[f]!=null) setField(row,f,(rec[f]+720)%1440);
+    return;
+  }
+});
+$("screen").addEventListener("dblclick",e=>{
+  const c=e.target.closest("[data-clear]"); if(!c) return;
+  const row=c.closest(".drow");
+  delete DB.days[row.dataset.k];
+  row.querySelectorAll(".tf").forEach(i=>{ i.value=""; i.classList.remove("on"); });
+  row.querySelectorAll(".mer").forEach(b=>{ b.textContent="–"; b.className="mer"; });
+  repaintDays(row); save();
+  if(navigator.vibrate) navigator.vibrate([4,30,4]);
+});
+$("screen").addEventListener("focusin",e=>{
+  if(e.target.classList.contains("tf")) setTimeout(()=>e.target.select(),0);
+});
+$("screen").addEventListener("focusout",e=>{
+  if(e.target.classList.contains("tf")) commit(e.target);
+});
+$("screen").addEventListener("keydown",e=>{
+  if(!e.target.classList.contains("tf")) return;
+  if(e.key==="Enter"){
+    e.preventDefault(); commit(e.target);
+    const all=[...document.querySelectorAll(".tf")], n=all[all.indexOf(e.target)+1];
+    if(n) n.focus(); else e.target.blur();
+  }
+  if(e.key==="Escape") e.target.blur();
+});
+$("strip").addEventListener("click",e=>{
+  const c=e.target.closest(".chip"); if(!c||c.disabled) return;
+  const order=["years","months","weeks","days"];
+  if(order.indexOf(c.dataset.lv)<order.indexOf(S.level)) go(c.dataset.lv,-1);
+});
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape" && !document.activeElement.classList.contains("tf")) back();
+});
+$("btnToday").addEventListener("click",()=>{
+  S.y=NOW.getFullYear(); S.m=NOW.getMonth(); S.wk=key(weekStart(NOW));
+  go("days",1);
+  const row=document.querySelector('.drow[data-k="'+TODAY+'"]');
+  if(row){ const i=row.querySelector(".tf"); if(i) i.focus(); }
+});
+function stampBackup(){ DB.backedUp=Date.now(); save(); renderChrome(); }
+function exportBackup(){
+  const json=JSON.stringify({app:"timesheet01",v:1,exported:new Date().toISOString(),days:DB.days},null,2);
+  const name="timesheet-"+key(new Date())+".json";
+  /* on a standalone iOS home-screen app a blob download often goes nowhere;
+     the share sheet is the reliable route into Files / iCloud Drive */
+  try{
+    const file=new File([json],name,{type:"application/json"});
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      navigator.share({files:[file],title:name})
+        .then(stampBackup)
+        .catch(err=>{ if(!err||err.name!=="AbortError") downloadBackup(json,name); });
+      return;
+    }
+  }catch(e){}
+  downloadBackup(json,name);
+}
+function downloadBackup(json,name){
+  try{
+    const url=URL.createObjectURL(new Blob([json],{type:"application/json"}));
+    const a=document.createElement("a");
+    a.href=url; a.download=name; a.style.display="none";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),2000);
+    stampBackup();
+  }catch(e){ alert("EXPORT FAILED — TRY AGAIN"); }
+}
+$("btnExport").addEventListener("click",exportBackup);
+$("btnImport").addEventListener("click",()=>$("fileIn").click());
+$("fileIn").addEventListener("change",e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const fr=new FileReader();
+  fr.onload=()=>{
+    try{
+      const j=JSON.parse(fr.result);
+      if(!j.days) throw 0;
+      let n=0;
+      for(const k in j.days){
+        if(!/^\d{4}-\d{2}-\d{2}$/.test(k)) continue;
+        const r=j.days[k], o={};
+        if(typeof r.in==="number") o.in=r.in;
+        if(typeof r.out==="number") o.out=r.out;
+        if(o.in!=null||o.out!=null){ DB.days[k]=o; n++; }
+      }
+      render(0); save(); alert("MERGED "+n+" RECORDS");
+    }catch(err){ alert("INVALID FILE"); }
+    e.target.value="";
+  };
+  fr.readAsText(f);
+});
+
+/* ══ boot ═════════════════════════════════════════════════════ */
+render(0);          // paints from the synchronous localStorage mirror
+hydrate();          // then merges IndexedDB in and claims persistent storage
+
+/* offline app shell. https (or localhost) only — that's a browser rule,
+   not a choice; a service worker cannot register over plain http. */
+if("serviceWorker" in navigator &&
+   (location.protocol==="https:"||location.hostname==="localhost"||location.hostname==="127.0.0.1")){
+  window.addEventListener("load",()=>{ navigator.serviceWorker.register("./sw.js").catch(()=>{}); });
+}
+</script>
+</body>
+</html>

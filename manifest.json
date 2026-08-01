@@ -1,0 +1,16 @@
+{
+  "name": "TIMESHEET—01",
+  "short_name": "TS—01",
+  "description": "Weekly time log with hour/minute and decimal totals. All data resident on this device.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#E7E4DD",
+  "theme_color": "#EBE8E2",
+  "categories": ["productivity", "utilities"],
+  "icons": [
+    { "src": "icon.png", "sizes": "180x180", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
