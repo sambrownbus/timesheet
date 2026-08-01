@@ -1,8 +1,10 @@
 /* TIMESHEET—01 · offline app shell
-   Cache-first with a background refresh. Once installed the app opens with
-   no network at all; a new version is picked up silently on the next launch.
-   Bump CACHE when the shell changes. */
-const CACHE = "ts01-v4";
+   The app document is network-first with a short timeout: online you always
+   get the current version on the very next launch, offline you get the cached
+   copy essentially instantly. Icons and manifest stay cache-first since they
+   rarely change. Bump CACHE when the shell changes. */
+const CACHE = "ts01-v5";
+const NET_TIMEOUT = 1500;
 const SHELL = [
   "./",
   "./index.html",
@@ -29,6 +31,43 @@ self.addEventListener("activate", e => {
   );
 });
 
+function store(req, res) {
+  if (res && res.ok && res.type === "basic") {
+    const copy = res.clone();
+    caches.open(CACHE).then(c => c.put(req, copy)).catch(() => {});
+  }
+  return res;
+}
+
+/* the app itself: try the network briefly, fall back to cache.
+   guarantees an update is never more than one launch behind, and that a dead
+   or slow connection still opens the app immediately. */
+function documentFirst(req) {
+  return caches.match(req, { ignoreSearch: true }).then(hit => {
+    let settled = false;
+    return new Promise(resolve => {
+      const done = r => { if (!settled) { settled = true; resolve(r); } };
+      const fallback = setTimeout(() => { if (hit) done(hit); }, NET_TIMEOUT);
+      fetch(req)
+        .then(res => { clearTimeout(fallback); done(store(req, res)); })
+        .catch(() => {
+          clearTimeout(fallback);
+          done(hit || caches.match("./index.html"));
+        });
+    });
+  });
+}
+
+/* everything else: cache-first, refreshed quietly in the background */
+function assetFirst(req) {
+  return caches.match(req, { ignoreSearch: true }).then(hit => {
+    const net = fetch(req).then(res => store(req, res))
+      .catch(() => hit || caches.match("./index.html"));
+    if (hit) { net.catch(() => {}); return hit; }
+    return net;
+  });
+}
+
 self.addEventListener("fetch", e => {
   const req = e.request;
   if (req.method !== "GET") return;
@@ -36,19 +75,8 @@ self.addEventListener("fetch", e => {
   try { url = new URL(req.url); } catch (_) { return; }
   if (url.origin !== self.location.origin) return;
 
-  e.respondWith(
-    caches.match(req, { ignoreSearch: true }).then(hit => {
-      const net = fetch(req).then(res => {
-        if (res && res.ok && res.type === "basic") {
-          const copy = res.clone();
-          caches.open(CACHE).then(c => c.put(req, copy)).catch(() => {});
-        }
-        return res;
-      }).catch(() => hit || caches.match("./index.html"));
-
-      // serve from cache instantly, let the network update it in the background
-      if (hit) { net.catch(() => {}); return hit; }
-      return net;
-    })
-  );
+  const isDoc = req.mode === "navigate" ||
+                (req.destination === "document") ||
+                /\/$|\.html$/.test(url.pathname);
+  e.respondWith(isDoc ? documentFirst(req) : assetFirst(req));
 });
