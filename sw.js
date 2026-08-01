@@ -3,7 +3,7 @@
    get the current version on the very next launch, offline you get the cached
    copy essentially instantly. Icons and manifest stay cache-first since they
    rarely change. Bump CACHE when the shell changes. */
-const CACHE = "ts01-v5";
+const CACHE = "ts01-v7";
 const NET_TIMEOUT = 1500;
 const SHELL = [
   "./",

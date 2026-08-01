@@ -7,7 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="TS—01">
-<meta name="theme-color" content="#EBE8E2">
+<meta name="theme-color" content="#F2F0EB">
 <link rel="apple-touch-icon" href="icon.png">
 <link rel="icon" href="icon.png">
 <link rel="manifest" href="manifest.json">
@@ -32,10 +32,12 @@
 html{height:100%}
 body{
   height:100vh;height:100dvh;overflow:hidden;display:flex;
-  background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1;
-  padding:8px;
-  padding-top:calc(8px + env(safe-area-inset-top));
-  padding-bottom:calc(8px + env(safe-area-inset-bottom));
+  background:var(--plate);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1;
+  /* edge to edge — the panel is the screen. only the notch/rounded corners
+     are avoided, and only on the sides where they actually exist. */
+  padding:0;
+  padding-left:env(safe-area-inset-left);
+  padding-right:env(safe-area-inset-right);
   touch-action:manipulation;
 }
 body::after{
@@ -49,25 +51,26 @@ button{cursor:pointer}
 .wrap{flex:1 1 auto;display:flex;min-height:0;max-width:640px;margin:0 auto;position:relative}
 .dev{
   flex:1 1 auto;display:flex;flex-direction:column;min-height:0;
-  background:var(--plate);border:1px solid var(--ink);position:relative;
-  box-shadow:0 0 0 1px rgba(255,255,255,.6) inset,0 22px 44px -34px rgba(20,20,16,.75);
+  background:var(--plate);border:0;position:relative;box-shadow:none;
 }
 .screwset i{position:absolute;width:11px;height:11px;border-radius:50%;
   background:radial-gradient(circle at 34% 30%,var(--well),#cdc9c0 65%,#bdb9b0);
   box-shadow:inset 0 1px 1.5px rgba(0,0,0,.28),0 .5px 0 rgba(255,255,255,.7);z-index:4}
-.screwset i:nth-child(1){top:7px;left:7px}
-.screwset i:nth-child(2){top:7px;right:7px}
-.screwset i:nth-child(3){bottom:7px;left:7px}
-.screwset i:nth-child(4){bottom:7px;right:7px}
+.screwset i:nth-child(1){top:calc(7px + env(safe-area-inset-top));left:7px}
+.screwset i:nth-child(2){top:calc(7px + env(safe-area-inset-top));right:7px}
+.screwset i:nth-child(3){bottom:calc(7px + env(safe-area-inset-bottom));left:7px}
+.screwset i:nth-child(4){bottom:calc(7px + env(safe-area-inset-bottom));right:7px}
 
 /* ─── top plate ─── */
-.top{flex:none;padding:9px var(--pad) 0}
+/* safe-area padding moved inside, so the plate colour runs under the status bar */
+.top{flex:none;padding:calc(9px + env(safe-area-inset-top)) var(--pad) 0}
 .brandrow{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
 .mark{font-size:clamp(19px,5.4vw,24px);letter-spacing:-.035em;font-weight:700;line-height:.9}
 .mark b{color:var(--or);font-weight:700}
 .subline{margin-top:5px;font-family:var(--lab);font-size:8px;letter-spacing:.13em;color:var(--ink2);white-space:nowrap}
 .cap{font-family:var(--lab);font-size:7.5px;letter-spacing:.11em;color:var(--grey);text-align:right;line-height:1.55;padding-top:2px}
-.rule{height:1px;background:var(--ink);margin-top:8px}
+.rule{height:1px;background:var(--ink);margin-top:8px;
+  margin-left:calc(var(--pad) * -1);margin-right:calc(var(--pad) * -1)}
 
 /* ─── nav strip ─── */
 .strip{display:flex;align-items:stretch;height:24px;margin-top:7px;user-select:none}
@@ -234,7 +237,8 @@ button{cursor:pointer}
 .proflab{display:flex;justify-content:space-between;font-family:var(--lab);font-size:7.5px;letter-spacing:.12em;color:var(--ink2);padding-top:4px}
 
 /* ─── bottom plate ─── */
-.bot{flex:none;border-top:1px solid var(--ink);padding:9px var(--pad);background:var(--plate)}
+.bot{flex:none;border-top:1px solid var(--ink);background:var(--plate);
+  padding:9px var(--pad) calc(9px + env(safe-area-inset-bottom))}
 .ports{display:flex;align-items:stretch;height:24px}
 .ports .h{flex:1 1 auto;background:var(--hatch);opacity:.5;min-width:6px}
 .pbtn{font-family:var(--lab);font-size:9px;letter-spacing:.13em;padding:0 12px;display:flex;align-items:center;
